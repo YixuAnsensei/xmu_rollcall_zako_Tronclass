@@ -1,0 +1,2 @@
+# xmu_rollcall_zako_Tronclass
+厦门大学XMU畅课数字签到直接获取数字签到码，这是一个为 XMUer 打造的、基于 爬虫思路 开发的畅课（Tronclass）签到码自动化查询工具。主要是解放天天被你要签到码的同学喵！使用我们的zako_rocall就靠自己查正在进行的数字签到喵！
