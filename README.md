@@ -99,7 +99,11 @@
 
 ## 📖 使用指南 (Demo Tutorial)
 
-![演示视频](assets/zako_rollcall_demo.mp4)
+
+
+
+
+
 
 根据演示视频，本应用的使用流程如下：
 
