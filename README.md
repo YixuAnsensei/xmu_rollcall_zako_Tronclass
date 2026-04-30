@@ -129,6 +129,10 @@
 
 https://github.com/KrsMt-0113/XMU-Rollcall-Bot
 
+感谢图标的作者：
+
+https://www.reddit.com/r/PixelArt/comments/j2k28q/cat_girl_character_any_criticism_is_appreciated/?tl=zh-hans
+
 以及我的舍友还写了一版纯用playwright库的点击操作完成的获取签到码py文件```rollcall_capture.py```，也放在这个仓库里了喵！
 
 如果你觉得好用，请给个 **Star** 喵⭐！如果有 Bug，欢迎提 Issue。再次提醒：**科技签到虽好，可不要旷课喵~**
