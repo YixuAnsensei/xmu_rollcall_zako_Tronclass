@@ -138,3 +138,15 @@ https://www.reddit.com/r/PixelArt/comments/j2k28q/cat_girl_character_any_critici
 如果你觉得好用，请给个 **Star** 喵⭐！如果有 Bug，欢迎提 Issue。再次提醒：**科技签到虽好，可不要旷课喵~**
 
 **本仓库代码主要用于交流研究，使用者进行不当操作与本作者无关喵！**
+
+---
+
+## ☕ 请作者喝杯奶茶
+
+如果这个项目对你有帮助，欢迎点个 Star，也可以请我喝一杯奶茶~
+
+<p align="center">
+  <img src="docs/alipay_qr.jpeg" width="220" alt="支付宝收款码">
+</p>
+
+> 赞赏纯属自愿，你的 Star 就是对项目最大的支持 ⭐
