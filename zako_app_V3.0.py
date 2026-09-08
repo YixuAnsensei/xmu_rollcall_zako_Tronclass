@@ -15,6 +15,7 @@ import sys
 import threading
 import uuid
 import requests
+import tkinter as tk
 import customtkinter as ctk
 from playwright.async_api import async_playwright
 from datetime import datetime, timezone, timedelta
