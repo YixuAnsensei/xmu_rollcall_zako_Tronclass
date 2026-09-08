@@ -270,6 +270,31 @@ def get_number_code(rollcall_id, cookie):
         return None, None, None
 
 
+def submit_number_code(cookie, rollcall_id, log=print):
+    log(f"🐾 开始数字签到提交 rollcall_id={rollcall_id}")
+    code, status, end_time = get_number_code(rollcall_id, cookie)
+    if not code:
+        log("❌ 未获取到数字签到码，无法提交")
+        return False, {"reason": "no_code"}
+    if status == "finished":
+        log(f"⏰ 签到已结束（截止：{end_time or '未知'}），不提交")
+        return False, {"reason": "finished", "end_time": end_time}
+    url = f"{BASE_URL}/api/rollcall/{rollcall_id}/answer_number_rollcall"
+    payload = {"deviceId": str(uuid.uuid4()), "numberCode": str(code)}
+    try:
+        resp = requests.put(
+            url, json=payload, headers={**HEADERS_BASE, "cookie": cookie}, timeout=15
+        )
+        if resp.status_code == 200:
+            log(f"✅ 数字签到成功喵❤ 签到码：{code}")
+            return True, {"code": code}
+        log(f"❌ 提交失败 HTTP {resp.status_code}：{resp.text[:200]}")
+        return False, {"reason": "http", "status": resp.status_code, "code": code}
+    except Exception as e:
+        log(f"❌ 提交异常：{e}")
+        return False, {"reason": "exception", "error": str(e), "code": code}
+
+
 # ==============================================================================
 # 雷达签到引擎（四校区两阶段定位，移植自 zako_radar.py）
 # ==============================================================================
@@ -606,6 +631,7 @@ class ZakoApp(ctk.CTk):
         self._courses    = []
         self._busy       = False        # 防止重复点击
         self._radar_running = False
+        self._number_running = False
 
         # ── 日志缓冲 ─────────────────────────────────
         self._log_lines  = []
@@ -1038,6 +1064,20 @@ class ZakoApp(ctk.CTk):
                 size=12, color=TEXT_SEC, anchor="center"
             ).pack(pady=(6, 0))
 
+            if result["status"] == "active":
+                make_button(
+                    inner, "🐾 一键数字签到",
+                    command=lambda: self._start_number(
+                        result["rid"], course_id, course_name
+                    ),
+                    width=240, height=46, size=14
+                ).pack(pady=(14, 0))
+            else:
+                make_label(
+                    inner, "签到已结束，无需提交喵~",
+                    size=12, color=TEXT_SEC, anchor="center"
+                ).pack(pady=(10, 0))
+
         elif result["type"] == "radar_active":
             # 雷达签到正在进行
             ctk.CTkLabel(inner, text="📡", font=("Segoe UI Emoji", 52)).pack()
@@ -1189,6 +1229,85 @@ class ZakoApp(ctk.CTk):
                 command=lambda: self._start_radar(rollcall_id, course_name),
                 width=300, height=42
             ).pack(pady=(12, 4))
+
+    def _start_number(self, rollcall_id, course_id, course_name):
+        if self._number_running:
+            return
+        self._number_running = True
+        self._log(f"🐾 主人点击了数字签到喵❤ rollcall_id={rollcall_id}")
+
+        self._clear_card_frame()
+
+        card = ctk.CTkFrame(self._code_card_frame, fg_color=SURFACE, corner_radius=20)
+        card.pack(fill="both", expand=True)
+
+        inner = ctk.CTkFrame(card, fg_color="transparent")
+        inner.place(relx=0.5, rely=0.5, anchor="center")
+
+        ctk.CTkLabel(inner, text="🐾", font=("Segoe UI Emoji", 46)).pack()
+        self._number_status = make_label(
+            inner, "正在提交数字签到喵~请稍候...",
+            size=13, color=TEXT_SEC, anchor="center"
+        )
+        self._number_status.pack(pady=(6, 8))
+
+        self._number_bar = ctk.CTkProgressBar(
+            inner, width=220, mode="indeterminate",
+            progress_color=ACCENT, fg_color=SURFACE2
+        )
+        self._number_bar.pack(pady=(0, 10))
+        self._number_bar.start()
+
+        def work():
+            return submit_number_code(self._cookie, rollcall_id, log=self._log)
+
+        def on_done(result, err):
+            if err:
+                self.after(0, self._finish_number, False, {"reason": "exception", "error": str(err)}, rollcall_id, course_id, course_name)
+                return
+            ok, info = result
+            self.after(0, self._finish_number, ok, info, rollcall_id, course_id, course_name)
+
+        run_sync_in_thread(work, on_done)
+
+    def _finish_number(self, ok, info, rollcall_id, course_id, course_name):
+        self._number_running = False
+
+        status = getattr(self, "_number_status", None)
+        bar = getattr(self, "_number_bar", None)
+        if status is None or bar is None:
+            return
+        try:
+            if not status.winfo_exists():
+                return
+        except Exception:
+            return
+        try:
+            bar.stop()
+        except Exception:
+            pass
+
+        if ok:
+            code = info.get("code") or ""
+            status.configure(text=f"✅ 数字签到成功喵❤ 签到码：{code}", text_color=SUCCESS)
+        else:
+            reason = info.get("reason")
+            if reason == "finished":
+                status.configure(text="⏰ 签到已结束，无法提交喵~", text_color=DANGER)
+            elif reason == "no_code":
+                status.configure(text="❌ 未获取到签到码喵，请再查一次~", text_color=DANGER)
+            else:
+                status.configure(text="❌ 数字签到失败喵，请重试~", text_color=DANGER)
+            make_button(
+                self._code_card_frame, "🔄 再试一次",
+                command=lambda: self._start_number(rollcall_id, course_id, course_name),
+                width=300, height=42
+            ).pack(pady=(12, 4))
+        make_button(
+            self._code_card_frame, "↩ 返回签到码",
+            command=lambda: self._show_code(course_id, course_name),
+            width=300, height=42
+        ).pack(pady=(8, 4))
 
 
 # ==============================================================================
