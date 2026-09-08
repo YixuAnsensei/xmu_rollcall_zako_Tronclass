@@ -9,7 +9,9 @@ zako 签到助手 —— CustomTkinter 版
 
 import asyncio
 import math
+import os
 import re
+import sys
 import threading
 import uuid
 import requests
@@ -222,8 +224,11 @@ def get_latest_rollcall(course_id, cookie, student_id):
         f"{BASE_URL}/api/course/{course_id}"
         f"/student/{student_id}/rollcalls?page=1&page_size=99"
     )
-    resp = requests.get(url, headers=headers, timeout=15)
-    data = resp.json()
+    try:
+        resp = requests.get(url, headers=headers, timeout=15)
+        data = resp.json()
+    except Exception:
+        return None
 
     if isinstance(data, list):
         rollcalls = data
@@ -242,9 +247,12 @@ def get_latest_rollcall(course_id, cookie, student_id):
 def get_number_code(rollcall_id, cookie):
     headers = {**HEADERS_BASE, "cookie": cookie}
     url  = f"{BASE_URL}/api/rollcall/{rollcall_id}/student_rollcalls"
-    resp = requests.get(url, headers=headers, timeout=15)
-    data = resp.json()
-    return data.get("number_code"), data.get("status"), data.get("end_time")
+    try:
+        resp = requests.get(url, headers=headers, timeout=15)
+        data = resp.json()
+        return data.get("number_code"), data.get("status"), data.get("end_time")
+    except Exception:
+        return None, None, None
 
 
 # ==============================================================================
@@ -299,17 +307,20 @@ def radar_put(cookie, rollcall_id, lat, lng, timeout=15):
         "longitude": lng,
         "speed": None,
     }
-    resp = requests.put(
-        f"{BASE_URL}/api/rollcall/{rollcall_id}/answer",
-        json=payload,
-        headers={**HEADERS_BASE, "cookie": cookie},
-        timeout=timeout,
-    )
     try:
-        data = resp.json()
-    except ValueError:
-        data = {}
-    return resp.status_code, data
+        resp = requests.put(
+            f"{BASE_URL}/api/rollcall/{rollcall_id}/answer",
+            json=payload,
+            headers={**HEADERS_BASE, "cookie": cookie},
+            timeout=timeout,
+        )
+        try:
+            data = resp.json()
+        except ValueError:
+            data = {}
+        return resp.status_code, data
+    except Exception as e:
+        return 0, {"error": str(e)}
 
 
 def radar_distance(data):
@@ -336,12 +347,29 @@ def xy_to_latlon(x, y, lat0, lng0):
 
 def circle_intersections(x1, y1, d1, x2, y2, d2):
     dist = math.hypot(x2 - x1, y2 - y1)
-    if dist > d1 + d2 or dist < abs(d1 - d2) or dist == 0:
+    if dist == 0:
         return None
+    if dist > d1 + d2:
+        if dist - (d1 + d2) <= 50.0:
+            r = d1 / (d1 + d2)
+            p = (x1 + (x2 - x1) * r, y1 + (y2 - y1) * r)
+            return p, p
+        return None
+    if dist < abs(d1 - d2):
+        if abs(d1 - d2) - dist <= 50.0:
+            if d1 > d2:
+                r = d1 / dist
+                p = (x1 + (x2 - x1) * r, y1 + (y2 - y1) * r)
+            else:
+                r = d2 / dist
+                p = (x2 + (x1 - x2) * r, y2 + (y1 - y2) * r)
+            return p, p
+        return None
+
     along = (d1 * d1 - d2 * d2 + dist * dist) / (2 * dist)
     h_sq = d1 * d1 - along * along
     if h_sq < 0:
-        return None
+        h_sq = 0.0
     height = math.sqrt(h_sq)
     mx = x1 + along * (x2 - x1) / dist
     my = y1 + along * (y2 - y1) / dist
@@ -507,6 +535,20 @@ class ZakoApp(ctk.CTk):
         self.geometry("500x700")
         self.resizable(False, False)
         self.configure(fg_color=BG)
+
+        ico_candidates = [
+            os.path.join(getattr(sys, "_MEIPASS", ""), "assets", "nekonn.ico"),
+            os.path.join(getattr(sys, "_MEIPASS", ""), "nekonn.ico"),
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "nekonn.ico"),
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "nekonn.ico"),
+        ]
+        for p in ico_candidates:
+            if os.path.exists(p):
+                try:
+                    self.iconbitmap(p)
+                    break
+                except Exception:
+                    pass
 
         # ── 共享状态 ─────────────────────────────────
         self._cookie     = None
