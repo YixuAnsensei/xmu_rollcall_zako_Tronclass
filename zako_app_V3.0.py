@@ -54,10 +54,14 @@ def get_current_semester_info(cookie, log=print):
         )
         if resp.status_code == 200:
             data = resp.json()
-            return str(data["semester"]["id"]), str(data["academic_year"]["id"])
-    except Exception:
-        pass
-    log("⚠️ 动态获取学期失败，使用内置默认值...")
+            sem_id = str(data["semester"]["id"])
+            year_id = str(data["academic_year"]["id"])
+            log(f"✅ 成功获取当前学期信息喵~❤ (学期:{sem_id}, 学年:{year_id})")
+            return sem_id, year_id
+        else:
+            log(f"⚠️ 动态获取学期接口响应异常 [{resp.status_code}]，使用内置默认值...")
+    except Exception as e:
+        log(f"⚠️ 动态获取学期请求失败: {e}，使用内置默认值...")
     return "29", "12"
 
 
@@ -215,6 +219,7 @@ def get_courses(cookie, s_id, y_id, log=print):
         if cid not in seen:
             seen.add(cid)
             unique.append(c)
+    log(f"✅ 成功获取课程列表喵~❤ 共 {len(unique)} 门课！")
     return unique
 
 
@@ -542,13 +547,16 @@ class ZakoApp(ctk.CTk):
             os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "nekonn.ico"),
             os.path.join(os.path.dirname(os.path.abspath(__file__)), "nekonn.ico"),
         ]
-        for p in ico_candidates:
-            if os.path.exists(p):
-                try:
-                    self.iconbitmap(p)
-                    break
-                except Exception:
-                    pass
+        def _apply_icon():
+            for p in ico_candidates:
+                if os.path.exists(p):
+                    try:
+                        self.iconbitmap(p)
+                        break
+                    except Exception:
+                        pass
+        _apply_icon()
+        self.after(200, _apply_icon)
 
         # ── 共享状态 ─────────────────────────────────
         self._cookie     = None
