@@ -107,7 +107,16 @@ async def login_and_get_cookie(log=print):
                     log(f"✅ 找到主人真实学生ID了喵❤：{student_id}")
 
         page.on("request", handle_request)
-        await page.goto(BASE_URL)
+        for attempt in range(1, 4):
+            try:
+                await page.goto(BASE_URL, timeout=20000, wait_until="commit")
+                break
+            except Exception as e:
+                if attempt < 3:
+                    log(f"⚠️ 畅课系统连接抖动 ({e})，正在自动重试第 {attempt}/3 次喵...")
+                    await asyncio.sleep(1.5)
+                else:
+                    raise
 
         if "ids.xmu.edu.cn" in page.url:
             log("👉 请在浏览器中输入账号密码登录，登录成功后脚本才自动继续喵~❤")
@@ -742,7 +751,9 @@ class ZakoApp(ctk.CTk):
                     self._set_home_status("❌ 课程列表拉取失败喵哦~", DANGER)
                     return
                 self._courses = courses
-                self.after(0, self._show_courses)   # 切换到课程页（主线程）
+                self._log(f"🎉 成功拉取到 {len(courses)} 门课程喵！即将载入课程列表喵~❤")
+                self._set_home_status(f"🎉 成功获取 {len(courses)} 门课程喵~❤", SUCCESS)
+                self.after(500, self._show_courses)
 
             run_sync_in_thread(fetch_courses, on_courses)
 
