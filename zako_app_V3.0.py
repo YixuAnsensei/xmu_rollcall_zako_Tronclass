@@ -285,14 +285,18 @@ CAMPUSES = [
 EARTH_R = 6371000.0
 PROBE_ACCURACY = 35
 
+_radar_context = threading.local()
 
-def find_active_radar_record(cookie, rollcall_id):
+
+def find_active_radar_record(cookie, rollcall_id, log=None):
     try:
         resp = requests.get(
             RADAR_URL, headers={**HEADERS_BASE, "cookie": cookie}, timeout=15
         )
         data = resp.json()
-    except Exception:
+    except Exception as e:
+        if log:
+            log(f"⚠️ 获取活动雷达列表失败: {e}")
         return None
     if isinstance(data, dict):
         rollcalls = data.get("rollcalls", [])
@@ -310,19 +314,24 @@ def find_active_radar_record(cookie, rollcall_id):
     return None
 
 
-def radar_put(cookie, rollcall_id, lat, lng, timeout=15):
+def radar_put(cookie, rollcall_id, lat, lng, timeout=15, session=None, device_id=None):
+    if session is None:
+        session = getattr(_radar_context, "session", None)
+    if device_id is None:
+        device_id = getattr(_radar_context, "device_id", None) or str(uuid.uuid4())
     payload = {
         "accuracy": PROBE_ACCURACY,
         "altitude": 0,
         "altitudeAccuracy": None,
-        "deviceId": str(uuid.uuid4()),
+        "deviceId": device_id,
         "heading": None,
         "latitude": lat,
         "longitude": lng,
         "speed": None,
     }
+    client = session if session is not None else requests
     try:
-        resp = requests.put(
+        resp = client.put(
             f"{BASE_URL}/api/rollcall/{rollcall_id}/answer",
             json=payload,
             headers={**HEADERS_BASE, "cookie": cookie},
@@ -455,20 +464,29 @@ def radar_triangulate(cookie, rollcall_id, center, log):
 
 def send_radar(cookie, rollcall_id, log=print):
     log(f"🛰 开始雷达签到 rollcall_id={rollcall_id}")
-    center, hit = radar_lock_campus(cookie, rollcall_id, log)
-    if center is None:
-        log("❌ 四校区探针均未回传距离，雷达签到失败")
-        return False, {"campus": None, "position": None}
-    if hit == 0.0:
-        log(f"✅ 雷达签到成功（校区中心直接命中：{center['name']}）")
-        return True, {"campus": center["name"], "position": (center["lat"], center["lng"])}
-    log(f"📍 锁定校区：{center['name']}")
-    ok, pos = radar_triangulate(cookie, rollcall_id, center, log)
-    if ok:
-        log(f"✅ 雷达签到成功，教师位置≈({pos[0]:.6f}, {pos[1]:.6f})")
-    else:
-        log("❌ 校区内精确定位失败")
-    return ok, {"campus": center["name"], "position": pos}
+    session = requests.Session()
+    device_id = str(uuid.uuid4())
+    _radar_context.session = session
+    _radar_context.device_id = device_id
+    try:
+        center, hit = radar_lock_campus(cookie, rollcall_id, log)
+        if center is None:
+            log("❌ 四校区探针均未回传距离，雷达签到失败")
+            return False, {"campus": None, "position": None}
+        if hit == 0.0:
+            log(f"✅ 雷达签到成功（校区中心直接命中：{center['name']}）")
+            return True, {"campus": center["name"], "position": (center["lat"], center["lng"])}
+        log(f"📍 锁定校区：{center['name']}")
+        ok, pos = radar_triangulate(cookie, rollcall_id, center, log)
+        if ok:
+            log(f"✅ 雷达签到成功，教师位置≈({pos[0]:.6f}, {pos[1]:.6f})")
+        else:
+            log("❌ 校区内精确定位失败")
+        return ok, {"campus": center["name"], "position": pos}
+    finally:
+        session.close()
+        _radar_context.session = None
+        _radar_context.device_id = None
 
 
 # ==============================================================================
@@ -880,10 +898,15 @@ class ZakoApp(ctk.CTk):
             rid = str(latest.get("id") or latest.get("rollcall_id") or "")
             t = fmt_time(latest.get("rollcall_time") or latest.get("created_at"))
             type_text = str(
-                latest.get("rollcall_type") or latest.get("type") or ""
+                latest.get("rollcall_type") or latest.get("type") or latest.get("kind") or ""
             ).lower()
-            if latest.get("is_radar") or "radar" in type_text:
-                active = find_active_radar_record(self._cookie, rid)
+            is_radar = (
+                bool(latest.get("is_radar"))
+                or bool(latest.get("isRadar"))
+                or "radar" in type_text
+            )
+            if is_radar:
+                active = find_active_radar_record(self._cookie, rid, self._log)
                 if active is not None or str(latest.get("status") or "") == "active":
                     return {"type": "radar_active", "rid": rid, "time": t}
                 return {"type": "radar_past", "time": t}
@@ -896,8 +919,13 @@ class ZakoApp(ctk.CTk):
                     "time": t,
                     "rid": rid,
                 }
-            active = find_active_radar_record(self._cookie, rid)
-            if active is not None and active.get("is_radar"):
+            active = find_active_radar_record(self._cookie, rid, self._log)
+            if active is not None and (
+                active.get("is_radar")
+                or active.get("isRadar")
+                or "radar" in str(active.get("rollcall_type") or active.get("type") or "").lower()
+                or (not active.get("is_number") and not active.get("is_qrcode") and not active.get("is_qr"))
+            ):
                 return {"type": "radar_active", "rid": rid, "time": t}
             return {"type": "other", "time": t}
 
@@ -915,12 +943,15 @@ class ZakoApp(ctk.CTk):
         run_sync_in_thread(fetch, on_result)
 
     def _clear_card_frame(self):
-        for w in self._code_card_frame.winfo_children():
-            if isinstance(w, ctk.CTkProgressBar):
-                try:
-                    w.stop()
-                except Exception:
-                    pass
+        def _stop_bars(parent):
+            for child in parent.winfo_children():
+                if isinstance(child, ctk.CTkProgressBar):
+                    try:
+                        child.stop()
+                    except Exception:
+                        pass
+                _stop_bars(child)
+        _stop_bars(self._code_card_frame)
         for w in self._code_card_frame.winfo_children():
             w.destroy()
 

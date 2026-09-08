@@ -1,6 +1,9 @@
 import os
+import sys
 
-conda_lib_bin = 'D:/Anaconda/envs/zako_env/Library/bin'
+conda_lib_bin = os.path.join(sys.prefix, 'Library', 'bin')
+if not os.path.isdir(conda_lib_bin):
+    conda_lib_bin = 'D:/Anaconda/envs/zako_env/Library/bin'
 
 a = Analysis(
     ['zako_app_V3.0.py'],

@@ -1,11 +1,13 @@
 import importlib.util
 import math
+import os
 import sys
 import unittest
 
+_target_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "zako_app_V3.0.py")
 spec = importlib.util.spec_from_file_location(
     "zako_v3",
-    "D:/claude-code-haha/rollcall-research/my-stable/zako_app_V3.0.py",
+    _target_path,
 )
 zako_v3 = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(zako_v3)
