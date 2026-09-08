@@ -568,6 +568,12 @@ class ZakoApp(ctk.CTk):
         self.resizable(False, False)
         self.configure(fg_color=BG)
 
+        png_candidates = [
+            os.path.join(getattr(sys, "_MEIPASS", ""), "assets", "nekonn.png"),
+            os.path.join(getattr(sys, "_MEIPASS", ""), "nekonn.png"),
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "nekonn.png"),
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "nekonn.png"),
+        ]
         ico_candidates = [
             os.path.join(getattr(sys, "_MEIPASS", ""), "assets", "nekonn.ico"),
             os.path.join(getattr(sys, "_MEIPASS", ""), "nekonn.ico"),
@@ -575,6 +581,14 @@ class ZakoApp(ctk.CTk):
             os.path.join(os.path.dirname(os.path.abspath(__file__)), "nekonn.ico"),
         ]
         def _apply_icon():
+            for p in png_candidates:
+                if os.path.exists(p):
+                    try:
+                        self._icon_photo = tk.PhotoImage(file=p)
+                        self.iconphoto(True, self._icon_photo)
+                        break
+                    except Exception:
+                        pass
             for p in ico_candidates:
                 if os.path.exists(p):
                     try:
