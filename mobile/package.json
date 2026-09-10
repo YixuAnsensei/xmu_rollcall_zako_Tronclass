@@ -1,6 +1,6 @@
 {
   "name": "zako-rollcall-mobile",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",

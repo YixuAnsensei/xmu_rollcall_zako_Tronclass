@@ -3,6 +3,15 @@
 原因: react-native-webview 和 @react-native-async-storage/async-storage 是原生模块，Expo Go 不支持
 解决: 移除这两个原生模块，改用 expo-web-browser（系统浏览器登录）
 
+=== v1.2.4 ===
+二次课堂实测反馈修复(签到成功后按钮不消失):
+- 根因: 真实服务器对学生已签的回传不含任何已知 signed 字段, 回查永远显示进行中
+- 修复: 提交成功(PUT 200)本身即硬事实, submitNumberCode/sendRadar 成功路径在 API 层 markSigned(rid) 本地标记, fetchRollcallOutcome 合并本地标记判定已签
+- UI: 已签渲染大号成功卡片(🎉 签到成功喵❤ + ✓已完成 绿徽章 + 可复制签到码), 操作按钮彻底移除, 雷达同款
+- detectSigned 加固(终审): signed/answered/result 别名族只认白名单真值(true/1/'true'/'yes'/'ok'/'success'), 显式 false/0/'no'/'' 一律判未签(漏认无害可再点, 误认致命按钮消失)
+- 弹窗文案统一 zako 风格
+- 回归扩至 44 用例: PUT 200 后服务器永不回传 signed 仍正确显示已签 / 雷达本地标记流转 radar_active.signed / 标记持久性 / 未签值六形态不误判 / 真值变体全别名族识别
+
 === v1.2.3 ===
 课堂实测缺陷修复:
 - 数字签到"活跃误显示已结束/不出签到按钮": student_rollcalls 未回传 status 时回落到签到记录自身 status 作判定证据; UI 仅在显式 finished 才显示已结束, 其余一律显示进行中并出按钮(桌面端语义对齐)
