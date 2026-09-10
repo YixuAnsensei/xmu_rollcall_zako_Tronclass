@@ -431,6 +431,55 @@ describe('e2e: classroom scenario regressions (2026-09-10 field test)', () => {
     if (requery?.type !== 'digital') throw new Error('expected digital');
     expect(requery.signed).toBe(true);
   });
+
+  test('explicitly-unsigned field values NEVER read as signed (button must stay)', async () => {
+    sc = freshScenario();
+    sc.rollcallsByCourse[1] = [{ id: 506, rollcall_type: 'number', status: 'active' }];
+    sc.numberRollcalls['506'] = { number_code: '6626', status: 'active', signed: false };
+    let outcome = await fetchRollcallOutcome(1, 'ck', 2025001);
+    if (outcome?.type !== 'digital') throw new Error('expected digital');
+    expect(outcome.signed).toBe(false);
+
+    sc.numberRollcalls['506'] = { number_code: '6626', status: 'active', answered: false };
+    outcome = await fetchRollcallOutcome(1, 'ck', 2025001);
+    if (outcome?.type !== 'digital') throw new Error('expected digital');
+    expect(outcome.signed).toBe(false);
+
+    sc.numberRollcalls['506'] = { number_code: '6626', status: 'active', result: false };
+    outcome = await fetchRollcallOutcome(1, 'ck', 2025001);
+    if (outcome?.type !== 'digital') throw new Error('expected digital');
+    expect(outcome.signed).toBe(false);
+
+    sc.numberRollcalls['506'] = { number_code: '6626', status: 'active', is_answered: 0 };
+    outcome = await fetchRollcallOutcome(1, 'ck', 2025001);
+    if (outcome?.type !== 'digital') throw new Error('expected digital');
+    expect(outcome.signed).toBe(false);
+
+    sc.numberRollcalls['506'] = { number_code: '6626', status: 'active', answered: 'no' };
+    outcome = await fetchRollcallOutcome(1, 'ck', 2025001);
+    if (outcome?.type !== 'digital') throw new Error('expected digital');
+    expect(outcome.signed).toBe(false);
+
+    sc.numberRollcalls['506'] = { number_code: '6626', status: 'active', result: '' };
+    outcome = await fetchRollcallOutcome(1, 'ck', 2025001);
+    if (outcome?.type !== 'digital') throw new Error('expected digital');
+    expect(outcome.signed).toBe(false);
+  });
+
+  test('signed true-value variants across alias family are recognized', async () => {
+    sc = freshScenario();
+    sc.rollcallsByCourse[1] = [{ id: 507, rollcall_type: 'number', status: 'active' }];
+    for (const v of [true, 1, 'true', 'yes', 'ok']) {
+      sc.numberRollcalls['507'] = { number_code: null, status: 'active', is_signed: v };
+      const outcome = await fetchRollcallOutcome(1, 'ck', 2025001);
+      if (outcome?.type !== 'digital') throw new Error('expected digital');
+      expect(outcome.signed).toBe(true);
+    }
+    sc.numberRollcalls['507'] = { number_code: null, status: 'active', is_answered: 'success' };
+    const outcome = await fetchRollcallOutcome(1, 'ck', 2025001);
+    if (outcome?.type !== 'digital') throw new Error('expected digital');
+    expect(outcome.signed).toBe(true);
+  });
 });
 
 describe('cookie session heuristic', () => {

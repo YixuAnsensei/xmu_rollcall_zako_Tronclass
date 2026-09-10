@@ -201,6 +201,35 @@ export async function getLatestRollcall(
   }
 }
 
+const SIGNED_KEYS = [
+  'signed',
+  'is_signed',
+  'isSigned',
+  'answered',
+  'is_answered',
+  'isAnswered',
+  'result',
+];
+
+function asSignedValue(v: unknown): boolean | null {
+  if (v === undefined || v === null) return null;
+  if (v === true || v === 1) return true;
+  if (typeof v === 'string') {
+    const s = v.trim().toLowerCase();
+    if (s === 'true' || s === '1' || s === 'yes' || s === 'ok' || s === 'success') return true;
+    return false;
+  }
+  return false;
+}
+
+function detectSigned(data: any): boolean {
+  for (const key of SIGNED_KEYS) {
+    const v = asSignedValue(data[key]);
+    if (v !== null) return v;
+  }
+  return false;
+}
+
 export async function getNumberCode(
   rollcallId: string,
   cookie: string
@@ -217,15 +246,7 @@ export async function getNumberCode(
       15000
     );
     const data = await resp.json();
-    const signed = Boolean(
-      data.signed ??
-        data.is_signed ??
-        data.isSigned ??
-        data.answered ??
-        data.is_answered ??
-        data.isAnswered ??
-        (data.result !== undefined && data.result !== null && data.result !== '')
-    );
+    const signed = detectSigned(data);
     return {
       code: data.number_code ?? null,
       status: data.status ?? null,
