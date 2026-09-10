@@ -312,6 +312,7 @@ export async function submitNumberCode(
       15000
     );
     if (resp.status === 200) {
+      markSigned(rollcallId);
       onLog(`✅ 数字签到成功喵❤ 签到码：${code}`);
       return { ok: true, code: String(code) };
     }
@@ -550,12 +551,14 @@ export async function sendRadar(
     return { success: false };
   }
   if (hitDist === 0) {
+    markSigned(rollcallId);
     log(`✅ 雷达签到成功（校区中心直接命中：${center.name}）`);
     return { success: true, campus: center.name, position: [center.lat, center.lng] };
   }
   log(`📍 锁定校区：${center.name}`);
   const [ok, pos] = await radarTriangulate(cookie, rollcallId, center, deviceId, log);
   if (ok && pos) {
+    markSigned(rollcallId);
     log(`✅ 雷达签到成功，教师位置≈(${pos[0].toFixed(6)}, ${pos[1].toFixed(6)})`);
   } else {
     log('❌ 校区内精确定位失败');
@@ -581,10 +584,20 @@ export function isRadarType(record: RollcallRecord): boolean {
 
 export type RollcallOutcome =
   | { type: 'none' }
-  | { type: 'radar_active'; rid: string; time: string }
+  | { type: 'radar_active'; rid: string; time: string; signed?: boolean }
   | { type: 'radar_past'; time: string }
   | { type: 'digital'; code: string; status: string | null; endTime: string | null; signed: boolean; time: string; rid: string }
   | { type: 'other'; time: string };
+
+const signedRids = new Set<string>();
+
+export function markSigned(rid: string): void {
+  if (rid) signedRids.add(rid);
+}
+
+export function isMarkedSigned(rid: string): boolean {
+  return signedRids.has(rid);
+}
 
 export async function fetchRollcallOutcome(
   courseId: number,
@@ -599,19 +612,19 @@ export async function fetchRollcallOutcome(
   if (radar) {
     const active = await findActiveRadarRecord(cookie, rid);
     if (active !== null || String(latest.status ?? '') === 'active') {
-      return { type: 'radar_active', rid, time };
+      return { type: 'radar_active', rid, time, signed: isMarkedSigned(rid) };
     }
     return { type: 'radar_past', time };
   }
   const { code, status, endTime, signed } = await getNumberCode(rid, cookie);
-  if (code || signed) {
+  if (code || signed || isMarkedSigned(rid)) {
     const evidence = status ?? latest.status ?? null;
     return {
       type: 'digital',
       code: code ?? '',
       status: evidence,
       endTime,
-      signed,
+      signed: signed || isMarkedSigned(rid),
       time,
       rid,
     };

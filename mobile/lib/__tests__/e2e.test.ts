@@ -6,6 +6,8 @@ import {
   submitNumberCode,
   sendRadar,
   fmtTime,
+  markSigned,
+  isMarkedSigned,
 } from '../api';
 import { looksLikeSessionCookie } from '../auth';
 
@@ -430,6 +432,42 @@ describe('e2e: classroom scenario regressions (2026-09-10 field test)', () => {
     const requery = await fetchRollcallOutcome(1, 'ck', 2025001);
     if (requery?.type !== 'digital') throw new Error('expected digital');
     expect(requery.signed).toBe(true);
+  });
+
+  test('local signed marker: PUT 200 sticks even when server never reports signed', async () => {
+    sc = freshScenario();
+    sc.rollcallsByCourse[1] = [{ id: 510, rollcall_type: 'number', status: 'active' }];
+    sc.numberRollcalls['510'] = { number_code: '4242', status: 'active' };
+    const before = await fetchRollcallOutcome(1, 'ck', 2025001);
+    if (before?.type !== 'digital') throw new Error('expected digital');
+    expect(before.signed).toBe(false);
+    const res = await submitNumberCode('ck', '510', () => {});
+    expect(res.ok).toBe(true);
+    expect(isMarkedSigned('510')).toBe(true);
+    sc.numberRollcalls['510'] = { number_code: '4242', status: 'active' };
+    const after = await fetchRollcallOutcome(1, 'ck', 2025001);
+    if (after?.type !== 'digital') throw new Error('expected digital');
+    expect(after.signed).toBe(true);
+  });
+
+  test('local signed marker flows to radar_active outcome', async () => {
+    sc = freshScenario();
+    sc.rollcallsByCourse[1] = [{ id: 511, is_radar: true, status: 'active' }];
+    sc.radarActive = [{ rollcall_id: 511, is_radar: true }];
+    sc.radarTeacher['511'] = { lat: 24.606, lng: 118.31, radius: 50 };
+    const before = await fetchRollcallOutcome(1, 'ck', 2025001);
+    if (before?.type !== 'radar_active') throw new Error('expected radar_active');
+    expect(before.signed).toBeFalsy();
+    const res = await sendRadar('ck', '511', () => {});
+    expect(res.success).toBe(true);
+    const after = await fetchRollcallOutcome(1, 'ck', 2025001);
+    if (after?.type !== 'radar_active') throw new Error('expected radar_active');
+    expect(after.signed).toBe(true);
+  });
+
+  test('explicitly-unsigned markSigned survives reload', async () => {
+    markSigned('511');
+    expect(isMarkedSigned('511')).toBe(true);
   });
 
   test('explicitly-unsigned field values NEVER read as signed (button must stay)', async () => {

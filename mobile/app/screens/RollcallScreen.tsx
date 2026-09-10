@@ -77,16 +77,16 @@ export default function RollcallScreen() {
       const log = (msg: string) => console.log(msg);
       const res = await submitNumberCode(cookie, result.rid, log);
       if (res.ok) {
-        Alert.alert('✅ 签到成功喵❤', `签到码：${res.code}`);
+        Alert.alert('🎉 签到成功喵❤', `签到码：${res.code}\n本次签到已完成~`);
         fetchRollcall();
       } else {
         const reason = res.reason;
         const msg =
           reason === 'finished'
-            ? '签到已结束'
+            ? '签到已结束，无法提交喵~'
             : reason === 'no_code'
-            ? '获取签到码失败，请再查一次'
-            : '提交失败，请检查网络';
+            ? '获取签到码失败，请再查一次喵~'
+            : '提交失败，请检查网络喵~';
         Alert.alert('❌ 签到失败', msg);
       }
     } catch (e) {
@@ -110,10 +110,8 @@ export default function RollcallScreen() {
       const res = await sendRadar(cookie, result.rid, log);
       if (res.success) {
         Alert.alert(
-          '✅ 雷达签到成功喵❤',
-          res.position
-            ? `教师位置 ≈ (${res.position[0].toFixed(4)}, ${res.position[1].toFixed(4)})`
-            : '签到完成'
+          '🎉 雷达签到成功喵❤',
+          res.campus ? `校区：${res.campus}\n本次签到已完成~` : '本次签到已完成~'
         );
         fetchRollcall();
       } else {
@@ -196,6 +194,28 @@ function renderResult(
         : isSigned
         ? { text: '🎉 已签到', color: '#06D6A0' }
         : { text: '✅ 进行中', color: '#FFD166' };
+      if (isSigned && !isFinished) {
+        return (
+          <View style={[styles.card, styles.signedCard]}>
+            <Text style={styles.signedEmoji}>🎉</Text>
+            <Text style={styles.signedHeading}>签到成功喵❤</Text>
+            <View style={styles.signedBadge}>
+              <Text style={styles.signedBadgeText}>✓ 已完成</Text>
+            </View>
+            {result.code ? (
+              <TouchableOpacity onPress={onCopy} activeOpacity={0.8}>
+                <Text style={styles.codeText}>{result.code}</Text>
+                <Text style={styles.copyHint}>点击签到码可复制</Text>
+              </TouchableOpacity>
+            ) : null}
+            <Text style={styles.timeText}>发起时间：{result.time}</Text>
+            {result.endTime && (
+              <Text style={styles.timeText}>截止时间：{fmtTime(result.endTime)}</Text>
+            )}
+            <Text style={styles.signedNote}>本次签到已完成，无需重复提交喵~</Text>
+          </View>
+        );
+      }
       return (
         <View style={styles.card}>
           <Text style={styles.emoji}>🐾</Text>
@@ -224,9 +244,6 @@ function renderResult(
               )}
             </TouchableOpacity>
           )}
-          {isSigned && (
-            <Text style={styles.finishedText}>本次签到已完成，无需重复提交喵~</Text>
-          )}
           {isFinished && (
             <Text style={styles.finishedText}>签到已结束，无需提交喵~</Text>
           )}
@@ -235,6 +252,28 @@ function renderResult(
     }
 
     case 'radar_active':
+      if (result.signed) {
+        return (
+          <View style={[styles.card, styles.signedCard]}>
+            <Text style={styles.signedEmoji}>🎉</Text>
+            <Text style={styles.signedHeading}>雷达签到成功喵❤</Text>
+            <View style={styles.signedBadge}>
+              <Text style={styles.signedBadgeText}>✓ 已完成</Text>
+            </View>
+            <Text style={styles.timeText}>签到时间：{result.time}</Text>
+            <Text style={styles.signedNote}>本次签到已完成，无需重复提交喵~</Text>
+            {radarLog.length > 0 && (
+              <View style={styles.radarLogBox}>
+                {radarLog.map((line, i) => (
+                  <Text key={i} style={styles.radarLogLine}>
+                    {line}
+                  </Text>
+                ))}
+              </View>
+            )}
+          </View>
+        );
+      }
       return (
         <View style={styles.card}>
           <Text style={styles.emoji}>📡</Text>
@@ -423,6 +462,48 @@ const styles = StyleSheet.create({
   refreshText: {
     color: '#A7A9BE',
     fontSize: 14,
+  },
+  signedCard: {
+    borderColor: '#06D6A0',
+    borderWidth: 2,
+    backgroundColor: '#12182B',
+  },
+  signedEmoji: {
+    fontSize: 72,
+    marginBottom: 8,
+  },
+  signedHeading: {
+    fontSize: 26,
+    fontWeight: '900',
+    color: '#06D6A0',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  signedBadge: {
+    backgroundColor: '#06D6A0',
+    borderRadius: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 8,
+    marginBottom: 16,
+  },
+  signedBadgeText: {
+    color: '#0F0E17',
+    fontSize: 15,
+    fontWeight: '900',
+    letterSpacing: 2,
+  },
+  copyHint: {
+    fontSize: 11,
+    color: '#A7A9BE',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  signedNote: {
+    fontSize: 13,
+    color: '#06D6A0',
+    textAlign: 'center',
+    marginTop: 4,
+    marginBottom: 16,
   },
   radarLogBox: {
     marginTop: 12,
