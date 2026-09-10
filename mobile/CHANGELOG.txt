@@ -1,0 +1,23 @@
+=== 修复记录 ===
+问题: PlatformConstants 找不到（原生模块未链接）
+原因: react-native-webview 和 @react-native-async-storage/async-storage 是原生模块，Expo Go 不支持
+解决: 移除这两个原生模块，改用 expo-web-browser（系统浏览器登录）
+
+=== v1.2.3 ===
+课堂实测缺陷修复:
+- 数字签到"活跃误显示已结束/不出签到按钮": student_rollcalls 未回传 status 时回落到签到记录自身 status 作判定证据; UI 仅在显式 finished 才显示已结束, 其余一律显示进行中并出按钮(桌面端语义对齐)
+- "开始时间当成结束时间": 卡片区分展示 发起时间/截止时间(end_time), 不再把发起时间标注成歧义文案
+- 登录页未登录就报"Cookie 获取失败": csrftoken 被旧子串匹配误判为会话 Cookie; 改为按 Cookie 名级识别(SESSION_COOKIE_NAMES), 未登录提示改为"请进行登录，登录后将自动获取 Cookie 喵~"
+- 雷达签到过程日志上屏(对齐桌面端雷达日志盒), 便于真机核验探针流程
+- 回归扩至 37 用例: 课堂场景(status 缺失回落/证据为 null 不判 finished/显式 finished 短路)+Cookie 启发式(csrftoken 不误判)
+
+=== v1.2.2 ===
+- 对齐桌面端网络降级: getLatestRollcall/getNumberCode 网络异常不再中断状态机, 返回空值继续走兜底分支(桌面端 try/except 同款)
+- isRadarType 补齐桌面端第三别名 kind; RollcallRecord 接口补 type/kind 字段
+- fmtTime 固定 UTC+8 "YYYY-MM-DD HH:mm"(桌面端同款), 不随设备时区漂移
+- 全部请求补齐桌面端超时(学期 5s / 其余 15s); 数字签到提交从 resp.ok 收紧为 status===200
+- 离线回归扩至 32 用例: 新增网关 502 全链路降级、探针 403 拒绝、kind 别名、UTC+8 跨日格式化
+
+=== 当前状态 ===
+TypeScript: 零错误
+离线测试: bun test 32 pass / 0 fail

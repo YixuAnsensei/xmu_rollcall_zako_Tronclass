@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">zako 签到助手</string>
+    <string name="login_title">厦大统一身份认证登录</string>
+    <string name="btn_login">登录 Tronclass</string>
+    <string name="btn_relogin">重新登录</string>
+    <string name="btn_refresh">刷新课程</string>
+    <string name="status_not_logged_in">未登录，请点击下方登录</string>
+    <string name="status_logged_in">已连接厦大畅课喵❤</string>
+    <string name="card_course_title">我的课程</string>
+    <string name="card_rollcall_title">签到看板</string>
+    <string name="btn_check_rollcall">查询签到</string>
+    <string name="btn_number_sign">一键数字签到</string>
+    <string name="btn_radar_sign">一键雷达签到</string>
+    <string name="log_drawer_title">运行日志喵❤</string>
+</resources>

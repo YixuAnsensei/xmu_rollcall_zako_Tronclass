@@ -1,0 +1,16 @@
+<resources>
+    <color name="bg_dark">#181825</color>
+    <color name="bg_card">#1E1E2E</color>
+    <color name="bg_input">#313244</color>
+    <color name="accent_pink">#F5C2E7</color>
+    <color name="accent_pink_dark">#F2CDCD</color>
+    <color name="accent_purple">#CBA6F7</color>
+    <color name="accent_blue">#89B4FA</color>
+    <color name="text_primary">#CDD6F4</color>
+    <color name="text_secondary">#A6ADC8</color>
+    <color name="color_success">#A6E3A1</color>
+    <color name="color_danger">#F38BA8</color>
+    <color name="color_warning">#F9E2AF</color>
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+</resources>

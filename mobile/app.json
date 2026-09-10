@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "Zako 签到助手",
+    "slug": "zako-rollcall-mobile",
+    "version": "1.2.3",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.zako.rollcall"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-foreground.png",
+        "backgroundColor": "#0F0E17"
+      },
+      "package": "com.zako.rollcall"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "70635657-87da-4edb-a688-6720f5f40ede"
+      }
+    },
+    "owner": "yixuansensei",
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      "expo-splash-screen"
+    ]
+  }
+}

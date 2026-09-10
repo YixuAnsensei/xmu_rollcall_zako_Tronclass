@@ -2,6 +2,30 @@
 厦门大学XMU畅课数字签到直接获取数字签到码，这是一个为 XMUer 打造的、基于 爬虫思路 开发的畅课（Tronclass）签到码自动化查询工具。主要是解放天天被你要签到码的同学喵！使用我们的zako_rocall就靠自己查正在进行的数字签到喵！
 # 🐾 zako_rollcall：厦大畅课签到码查询神器（V4 一键数字签到预览版）
 
+---
+
+## 📱 隆重推出：zako 签到助手 Android 移动端 APK（V4beta 同款引擎）
+
+> **不用带电脑也能查码+签到了喵！！** 手机版正式登陆，数字签到与雷达签到双引擎完整移植，真机课堂实测可用。
+
+| | 桌面版 (V4) | 📱 移动端 APK |
+|---|---|---|
+| **平台** | Windows（PyInstaller exe） | Android 8.0+ |
+| **数字签到** | ✅ 查码 + 一键提交 | ✅ 查码 + 一键提交 + 状态生命周期（进行中→已签→已结束） |
+| **雷达签到** | ✅ 四校区两阶段定位 | ✅ 同款算法 + 过程日志上屏 |
+| **登录** | Playwright 驱动本地浏览器 | 内嵌 WebView + 原生模块穿透 HttpOnly Cookie |
+| **携带** | 🖥️ | 🐱 口袋里 |
+
+- **📦 APK 下载**：见本仓库 [Releases（V4beta）](https://github.com/YixuAnsensei/xmu_rollcall_zako_Tronclass/releases) —— 与桌面 exe 同 Release 发布，手机下载安装即用
+- ** 💻 完整源码开源**：`mobile/` 目录 —— Expo SDK 57 + React Native 0.86 + TypeScript，业务逻辑 1:1 对齐桌面端 `zako_app_V3.0.py`（四校区切平面三角定位、`xyToLatlon` 逆投影、统一判定状态机、网络降级兜底全部逐行对齐）
+- **🧪 质量保障**：39 项离线回归测试（含端到端网络降级仿真）全绿，TypeScript 严格模式 0 错误
+- **🍎 iOS**：原生 Cookie 模块（`WKHTTPCookieStore`）已就绪（`mobile/modules/xmu-cookie/ios/`），待 Apple Developer 账号即可出包
+
+**移动端技术亮点**：CAS 统一认证 HttpOnly Cookie 穿透（自研 Expo 原生模块）、Android 15 Edge-to-Edge 安全区适配、会话级 Cookie 不落盘（与桌面版同安全策略）。
+
+---
+
+
 > **声明：** 本项目仅供技术交流与学习，请勿用于非法用途。请尊重教学秩序，文明签到喵！
 >
 > **环境要求：**用户电脑上**一定**要有`edge`或者`chrome`浏览器喵！

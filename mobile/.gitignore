@@ -1,0 +1,16 @@
+node_modules/
+.expo/
+dist/
+*.log
+.env
+.DS_Store
+gradle-8.6-bin.zip
+
+/android/
+/ios/
+modules/*/android/build/
+modules/*/android/.cxx/
+*.orig
+*.apk
+qr_*.png
+!qr_connect.png

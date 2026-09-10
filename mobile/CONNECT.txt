@@ -1,0 +1,63 @@
+=== Zako 签到助手 - 连接方式 ===
+
+v1.2.3 变更:
+- 课堂实测缺陷修复: 数字签到活跃态误判已结束( status 缺失回落记录自身 status, UI 仅显式 finished 才判已结束)
+- 签到卡片区分 发起时间/截止时间; 登录页 csrftoken 误判修复+提示语改"请进行登录将自动获取 Cookie 喵~"
+- 雷达过程日志上屏; 回归扩至 37 用例
+
+v1.2.2 变更:
+- 深度对齐桌面端网络降级: 签到记录/取码请求异常时不再中断判定, 空值回落兜底分支(桌面端 try/except 同款)
+- isRadarType 补齐 kind 别名; fmtTime 固定 UTC+8(桌面端同款); 全请求补桌面端超时(5s/15s); 数字提交判定收紧为 HTTP 200
+- 离线回归扩至 32 用例(网关 502 全链路降级/探针 403/kind 别名/UTC+8 跨日)
+
+v1.2.1 变更:
+- 深度审计桌面端对账: 修复雷达两圆"内切近似"分支几何公式与桌面端不一致的偏差（1.2.0 遗漏的边缘场景）
+- 新增离线回归测试 lib/__tests__/api.test.ts（bun test, 15 用例）: 四校区定位<50m、直中、无距离、超时、两圆不相交、状态机判定（雷达结束/二维码不误判雷达/无码兜底）、数字签到提交请求形态（GET取码→PUT answer_number_rollcall, body=deviceId+numberCode, finished/无码不提交）、时间解析
+
+v1.2.0 构建页: https://expo.dev/accounts/yixuansensei/projects/zako-rollcall-mobile/builds/3b0bc2a1-3f0f-4998-a6b9-2eaa1c3e92e6
+本地已下载: D:\claude-code-haha\xmu_rollcall_mobile\zako-rollcall-v1.2.0.apk（卸载旧版后传手机安装）
+v1.2.0 变更:
+- 雷达签到引擎对齐桌面端重写: 修复三边定位 XY 坐标未转回经纬度就提交的致命 bug（"计算距离出错"根源）; 新增活动雷达列表判定（/api/radar/rollcalls）,已结束的雷达签到正确显示"上一次是雷达签到"（"已结束不显示"根源）; 会话共享 deviceId; 无数字码时兜底判雷达
+- 导航分层: 登录成功→枢纽页(学生信息+进入课程按钮)→课程列表→签到页, 返回逐级后退; Android 返回键在枢纽页回到登录页
+- APP 图标换成 nekonn 猫图（含 Android 自适应图标）
+
+v1.1.1 构建页: https://expo.dev/accounts/yixuansensei/projects/zako-rollcall-mobile/builds/eb525a85-dbb1-4958-aa98-cc0208fa2908
+本地已下载: D:\claude-code-haha\xmu_rollcall_mobile\zako-rollcall-v1.1.1.apk（94MB, 直接传手机安装）
+v1.1.1（最新, 安全区/跳转修复版）变更:
+- 修复 Android 状态栏遮挡: 全页面 SafeAreaView 换成 react-native-safe-area-context, 顶部角落按钮不再被状态栏吃掉
+- 登录成功后直跳课程列表页（对齐桌面 exe, 移除中间"好的"弹窗）; 首页登录态猫爪同样直接进课程
+- WebView 登录页"刷新/关闭"按钮从顶部移到屏幕底部操作栏, 避开状态栏与手势区
+- 下载失败根因: 浏览器未走代理(eascdn.net 不在 TUN 规则集), curl/命令行走系统代理可下; APK 已用代理下载到本地
+（最新构建页与直链见下方; 电脑端也可用 bunx eas-cli build:view <build-id> --json 拿 buildUrl 后 curl -L 下载）
+
+v1.1.0（CAS 自动登录版）已构建成功:
+构建页: https://expo.dev/accounts/yixuansensei/projects/zako-rollcall-mobile/builds/a7cc50f2-6d4a-4828-924c-9e2c0dc02839
+（打开构建页 → 右侧绿色 Download 按钮 → 得到 application-xxxx.apk 直链, 手机换网络下载即可）
+
+v1.1.0 变更:
+- CAS 自动登录: 内嵌 WebView 走学校统一认证 + 本地原生模块读 HttpOnly Cookie（对齐桌面版, 移除手动粘贴 Cookie）
+- 每次启动需重新登录（学校 Cookie 时效很短, 不做持久化）
+- 修复本地模块命名空间冲突（expo.modules → expo.modules.xmucookie, 云端构建失败根因）
+- 新增 DEV_GUIDE.md 开发说明与使用指导
+
+旧版（v1.0.0, 手动粘贴 Cookie, 已淘汰）:
+https://expo.dev/artifacts/eas/vN9EBrmbazTNQQwnOgPZrGb1hHKzbltH5wK9NKdQadA.apk
+
+v1.0.0 变更:
+- 升级到 Expo SDK 57 (RN 0.86.3 / React 19.2.3), 移除 @react-navigation
+- 登录为手动粘贴 Cookie, /api/profile 验证并显示用户名
+- android/ 原生工程由 expo prebuild 生成, 不再入库
+
+开发调试（Expo Go）:
+1. 手机和电脑连同一个 WiFi
+2. 启动: bunx expo start --tunnel  (推荐, 免防火墙配置)
+   或局域网模式需管理员放行:
+   netsh advfirewall firewall add rule name="Expo DevServer 8082" protocol=TCP dir=in localport=8082 action=allow
+3. Expo Go 扫终端二维码或输入 exp:// 地址
+注意: CAS 登录依赖本地原生模块, Expo Go 无法测试, 需构建 APK 真机验证
+
+自己构建 APK（构建在云端跑, 本机不需要 Android Studio）:
+1. cd D:\claude-code-haha\xmu_rollcall_mobile
+2. bunx eas-cli build --platform android --profile preview
+3. 构建约 10-20 分钟, 完成后终端直接打印二维码和链接, 手机扫码即可安装
+   （前提: 已登录 Expo 账号, 用 bunx eas-cli login; 项目已关联 eas.projectId）
